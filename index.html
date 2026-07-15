@@ -738,6 +738,34 @@ function renderPackingPage(){
     <div class="pack-grid">${cards}</div>
     <button class="pack-reset" id="packReset">체크 초기화</button>
     <div class="card" style="margin-top:18px;"><h3>참고 사항</h3><ul style="margin:0;padding-left:18px;font-size:12.8px;line-height:1.8;color:var(--ink-text-soft);">${notesHtml}</ul></div>
+
+    <div class="roster-head" style="margin-top:30px;"><h2>중국 기행 필수 앱</h2><p>출발 전 미리 설치해두시면 현지에서 훨씬 편합니다. 이름을 눌러 각 스토어로 이동합니다.</p></div>
+    <div class="info-grid">
+      <div class="card info-card">
+        <h3>💳 알리페이 (Alipay)</h3>
+        <p style="font-size:12.8px;color:var(--ink-text-soft);">해외카드를 등록하면 중국 어디서나 QR 결제가 가능합니다. 여권으로 본인인증하면 별도 중국 계좌 없이도 사용할 수 있습니다.</p>
+        <div style="display:flex; gap:10px; margin-top:10px;">
+          <a class="linkbtn" href="https://apps.apple.com/app/id333206289" target="_blank" rel="noopener">iOS →</a>
+          <a class="linkbtn" href="https://play.google.com/store/apps/details?id=com.eg.android.AlipayGphone" target="_blank" rel="noopener">Android →</a>
+        </div>
+      </div>
+      <div class="card info-card">
+        <h3>💬 위챗페이 (WeChat)</h3>
+        <p style="font-size:12.8px;color:var(--ink-text-soft);">메신저 기능이 함께 있어 현지 가이드·상점과의 소통에도 유용합니다. 결제 기능은 앱 안에서 별도 활성화가 필요합니다.</p>
+        <div style="display:flex; gap:10px; margin-top:10px;">
+          <a class="linkbtn" href="https://apps.apple.com/app/id414478124" target="_blank" rel="noopener">iOS →</a>
+          <a class="linkbtn" href="https://play.google.com/store/apps/details?id=com.tencent.mm" target="_blank" rel="noopener">Android →</a>
+        </div>
+      </div>
+      <div class="card info-card">
+        <h3>🧭 고덕지도 (AMap Global)</h3>
+        <p style="font-size:12.8px;color:var(--ink-text-soft);">해외 여행자용 영어 지원 버전입니다. 이 페이지 지도의 "고덕지도 →" 버튼과 연동되어 정확한 위치·길찾기·택시 호출에 활용할 수 있습니다.</p>
+        <div style="display:flex; gap:10px; margin-top:10px;">
+          <a class="linkbtn" href="https://apps.apple.com/app/id461703208" target="_blank" rel="noopener">iOS →</a>
+          <a class="linkbtn" href="https://play.google.com/store/apps/details?id=com.autonavi.minimap" target="_blank" rel="noopener">Android →</a>
+        </div>
+      </div>
+    </div>
   </section>`;
 }
 const PACK_KEY = 'imjeong_packing_v1';
@@ -780,12 +808,12 @@ function renderInfoPage(){
       <div class="card info-card">
         <h3>인천 → 상하이 (OZ361 · 아시아나항공)</h3>
         <p style="font-size:13px;color:var(--ink-text-soft);line-height:1.7;">2026.08.26(수) 09:00 인천(T2) 출발 → 10:05 상하이 푸둥공항(T2) 도착<br>ECONOMY/V · CONFIRMED</p>
-        <a class="linkbtn" href="https://flyasiana.com/I/US/EN/CheckIn.do" target="_blank" rel="noopener">아시아나항공 체크인 바로가기 →</a>
+        <a class="linkbtn" href="https://flyasiana.com/I/KR/KO/CheckIn.do" target="_blank" rel="noopener">아시아나항공 체크인 바로가기 →</a>
       </div>
       <div class="card info-card">
         <h3>난징 → 인천 (OZ350 · 아시아나항공)</h3>
         <p style="font-size:13px;color:var(--ink-text-soft);line-height:1.7;">2026.08.30(일) 14:50 난징(T2) 출발 → 18:15 인천(T2) 도착<br>ECONOMY/E · CONFIRMED</p>
-        <a class="linkbtn" href="https://flyasiana.com/I/US/EN/CheckIn.do" target="_blank" rel="noopener">아시아나항공 체크인 바로가기 →</a>
+        <a class="linkbtn" href="https://flyasiana.com/I/KR/KO/CheckIn.do" target="_blank" rel="noopener">아시아나항공 체크인 바로가기 →</a>
       </div>
       <div class="card info-card">
         <h3>숙소 목록</h3>
@@ -795,34 +823,6 @@ function renderInfoPage(){
           <li>난징 · 大观视界酒店 (025-5858 1155)</li>
           <li>난징 · 南京中央饭店 (025-8315 0888)</li>
         </ul>
-      </div>
-    </div>
-
-    <div class="roster-head" style="margin-top:30px;"><h2>중국 기행 필수 앱</h2><p>출발 전 미리 설치해두시면 현지에서 훨씬 편합니다. 이름을 눌러 각 스토어로 이동합니다.</p></div>
-    <div class="info-grid">
-      <div class="card info-card">
-        <h3>💳 알리페이 (Alipay)</h3>
-        <p style="font-size:12.8px;color:var(--ink-text-soft);">해외카드를 등록하면 중국 어디서나 QR 결제가 가능합니다. 여권으로 본인인증하면 별도 중국 계좌 없이도 사용할 수 있습니다.</p>
-        <div style="display:flex; gap:10px; margin-top:10px;">
-          <a class="linkbtn" href="https://apps.apple.com/app/id333206289" target="_blank" rel="noopener">iOS →</a>
-          <a class="linkbtn" href="https://play.google.com/store/apps/details?id=com.eg.android.AlipayGphone" target="_blank" rel="noopener">Android →</a>
-        </div>
-      </div>
-      <div class="card info-card">
-        <h3>💬 위챗페이 (WeChat)</h3>
-        <p style="font-size:12.8px;color:var(--ink-text-soft);">메신저 기능이 함께 있어 현지 가이드·상점과의 소통에도 유용합니다. 결제 기능은 앱 안에서 별도 활성화가 필요합니다.</p>
-        <div style="display:flex; gap:10px; margin-top:10px;">
-          <a class="linkbtn" href="https://apps.apple.com/app/id414478124" target="_blank" rel="noopener">iOS →</a>
-          <a class="linkbtn" href="https://play.google.com/store/apps/details?id=com.tencent.mm" target="_blank" rel="noopener">Android →</a>
-        </div>
-      </div>
-      <div class="card info-card">
-        <h3>🧭 고덕지도 (AMap Global)</h3>
-        <p style="font-size:12.8px;color:var(--ink-text-soft);">해외 여행자용 영어 지원 버전입니다. 이 페이지 지도의 "고덕지도 →" 버튼과 연동되어 정확한 위치·길찾기·택시 호출에 활용할 수 있습니다.</p>
-        <div style="display:flex; gap:10px; margin-top:10px;">
-          <a class="linkbtn" href="https://apps.apple.com/app/id461703208" target="_blank" rel="noopener">iOS →</a>
-          <a class="linkbtn" href="https://play.google.com/store/apps/details?id=com.autonavi.minimap" target="_blank" rel="noopener">Android →</a>
-        </div>
       </div>
     </div>
   </section>`;
