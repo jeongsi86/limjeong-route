@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>임정루트 평화통일 기행</title>
+<meta property="og:title" content="임정루트 평화통일 기행">
+<meta property="og:description" content="상하이 · 자싱 · 항저우 · 난징 — 대한민국임시정부의 자취를 따라 · 2026.08.26–30">
+<meta property="og:image" content="og-image.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;600;700;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+/* ============================================================
+   임정루트 평화통일 기행 — Design tokens
+   Concept: a 1930s-diaspora travel dossier / passport.
+   Dark ink-navy cover, aged-paper document pages, cinnabar
+   ink-stamp accent, brass foil rule. Route rendered as a strip
+   of passport/immigration stamps — a real sequence, so numbered
+   markers are earned here rather than decorative.
+   ============================================================ */
+
+:root{
+  --ink-navy:      #171d2b;
+  --ink-navy-2:    #212a3f;
+  --paper:         #ece3cd;
+  --paper-2:       #e2d6b8;
+  --paper-line:    #c7b489;
+  --ink-text:      #241f16;
+  --ink-text-soft: #4b4230;
+  --seal:          #9c3b2e;
+  --seal-deep:     #7c2e24;
+  --brass:         #b8975a;
+  --brass-bright:  #d9b978;
+  --ok-green:      #4c6b4f;
+
+  --serif: 'Noto Serif KR', serif;
+  --sans: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+
+  --radius: 3px;
+  --shadow-card: 0 1px 0 rgba(0,0,0,.05), 0 8px 20px -12px rgba(23,29,43,.35);
+}
+
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0;
+  background:var(--ink-navy);
+  color:var(--ink-text);
+  font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;
+}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; scroll-behavior:auto !important;}
+}
+
+a{color:inherit;}
+button{font-family:inherit;}
+:focus-visible{outline:2px solid var(--brass-bright); outline-offset:2px;}
+
+/* ---------- texture helpers ---------- */
+.grain{
+  position:absolute; inset:0; pointer-events:none; opacity:.05; mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ============================================================
+   HERO / COVER
+   ============================================================ */
+.cover{
+  position:relative;
+  background:
+    radial-gradient(1200px 500px at 15% -10%, rgba(217,185,120,.10), transparent 60%),
+    linear-gradient(180deg, var(--ink-navy) 0%, var(--ink-navy-2) 100%);
+  color:var(--paper);
+  padding:56px 20px 34px;
+  overflow:hidden;
+  border-bottom:6px double var(--brass);
+}
+.cover-inner{max-width:1040px; margin:0 auto; position:relative; z-index:1;}
+.eyebrow{
+  font-family:var(--mono); letter-spacing:.24em; text-transform:uppercase;
+  font-size:11px; color:var(--brass-bright); display:flex; align-items:center; gap:10px;
+}
+.eyebrow::before{content:''; width:24px; height:1px; background:var(--brass-bright); display:inline-block;}
+h1.title{
+  font-family:var(--serif); font-weight:900;
+  font-size:clamp(32px, 6vw, 58px);
+  line-height:1.08; margin:14px 0 6px; letter-spacing:-.01em;
+}
+h1.title small{
+  display:block; font-size:.34em; font-weight:600; color:var(--paper-2); letter-spacing:.06em; margin-top:10px;
+}
+.subtitle{font-size:15px; color:var(--paper-2); max-width:640px; line-height:1.7; margin:10px 0 28px;}
+
+/* route stamp strip — the signature element */
+.route{
+  display:flex; align-items:center; gap:0; margin:8px 0 6px; overflow-x:auto; padding:6px 2px 14px;
+}
+.route::-webkit-scrollbar{height:4px;}
+.route::-webkit-scrollbar-thumb{background:rgba(217,185,120,.3); border-radius:2px;}
+.stamp-btn{
+  all:unset; cursor:pointer; flex:0 0 auto; display:flex; flex-direction:column; align-items:center; gap:8px;
+  padding:4px 10px; position:relative;
+}
+.stamp{
+  width:64px; height:64px; border-radius:50%;
+  border:2px solid var(--brass-bright);
+  display:flex; align-items:center; justify-content:center; flex-direction:column;
+  color:var(--brass-bright); font-family:var(--mono); position:relative;
+  transform:rotate(var(--rot,-4deg));
+  transition:transform .2s ease, border-color .2s ease, color .2s ease, background .2s ease;
+  background:rgba(217,185,120,.04);
+}
+.stamp::before{
+  content:''; position:absolute; inset:5px; border-radius:50%; border:1px dashed rgba(217,185,120,.5);
+}
+.stamp .d{font-size:9px; letter-spacing:.08em;}
+.stamp .n{font-family:var(--serif); font-weight:700; font-size:15px; margin-top:1px;}
+.stamp-btn:hover .stamp, .stamp-btn.active .stamp{
+  transform:rotate(0deg) scale(1.06); border-color:var(--seal); color:var(--seal); background:rgba(156,59,46,.10);
+}
+.stamp-btn .city{font-size:11px; color:var(--paper-2); font-weight:500; white-space:nowrap;}
+.stamp-btn.active .city{color:var(--brass-bright);}
+.route-line{
+  position:absolute; left:0; right:0; height:1px; background:repeating-linear-gradient(90deg, var(--brass) 0 6px, transparent 6px 12px);
+  top:38px; z-index:-1;
+}
+
+/* countdown */
+.dday-row{display:flex; flex-wrap:wrap; gap:18px; align-items:center; margin-top:22px;}
+.dday{
+  font-family:var(--mono); background:rgba(0,0,0,.22); border:1px solid rgba(217,185,120,.35);
+  padding:10px 16px; border-radius:var(--radius); display:flex; align-items:baseline; gap:10px;
+}
+.dday b{font-size:26px; color:var(--brass-bright); font-weight:600;}
+.dday span{font-size:11px; color:var(--paper-2); letter-spacing:.05em;}
+.meta-note{font-size:12px; color:var(--paper-2); opacity:.8;}
+
+/* ============================================================
+   NAV
+   ============================================================ */
+.tabbar{
+  position:sticky; top:0; z-index:50;
+  background:var(--ink-navy); border-bottom:1px solid rgba(217,185,120,.25);
+  display:flex; overflow-x:auto; gap:2px; padding:0 12px;
+}
+.tabbar::-webkit-scrollbar{display:none;}
+.tab{
+  all:unset; cursor:pointer; flex:0 0 auto; padding:14px 16px; font-size:13px; font-weight:600;
+  color:var(--paper-2); border-bottom:2px solid transparent; white-space:nowrap; letter-spacing:.02em;
+}
+.tab.active{color:var(--brass-bright); border-color:var(--seal);}
+.tab:hover{color:var(--paper);}
+
+/* ============================================================
+   PAGES
+   ============================================================ */
+.page{max-width:1040px; margin:0 auto; padding:34px 20px 90px; display:none;}
+.page.active{display:block; animation:fadeIn .35s ease;}
+@keyframes fadeIn{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+
+.day-head{display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:12px; margin-bottom:18px;}
+.day-head h2{
+  font-family:var(--serif); color:var(--paper); font-size:clamp(22px,4vw,30px); margin:0 0 4px; font-weight:700;
+}
+.day-head .day-date{font-family:var(--mono); color:var(--brass-bright); font-size:13px;}
+.weather-chip{
+  font-family:var(--mono); font-size:12.5px; color:var(--paper); background:rgba(217,185,120,.08);
+  border:1px solid rgba(217,185,120,.3); border-radius:var(--radius); padding:8px 12px; display:flex; gap:10px; align-items:center;
+}
+.weather-chip .ic{font-size:18px;}
+
+.grid-2{display:grid; grid-template-columns:1.05fr .95fr; gap:22px;}
+@media (max-width:860px){ .grid-2{grid-template-columns:1fr;} }
+
+/* timeline card */
+.card{
+  background:var(--paper); border-radius:var(--radius); box-shadow:var(--shadow-card);
+  border:1px solid var(--paper-line); padding:20px 22px;
+}
+.card h3{
+  font-family:var(--serif); font-size:15px; margin:0 0 14px; padding-bottom:10px; border-bottom:1px solid var(--paper-line);
+  display:flex; align-items:center; gap:8px; color:var(--ink-text);
+}
+.timeline{list-style:none; margin:0; padding:0; position:relative;}
+.timeline::before{content:''; position:absolute; left:57px; top:4px; bottom:4px; width:1px; background:var(--paper-line);}
+.timeline li{position:relative; padding:0 0 18px 76px; font-size:13.5px; line-height:1.6;}
+.timeline li:last-child{padding-bottom:0;}
+.timeline .tt{
+  position:absolute; left:0; top:1px; width:50px; text-align:right; font-family:var(--mono); font-size:11px; color:var(--ink-text-soft);
+}
+.timeline li::after{
+  content:''; position:absolute; left:53px; top:5px; width:9px; height:9px; border-radius:50%;
+  background:var(--paper); border:2px solid var(--seal);
+}
+.timeline .place-link{
+  color:var(--seal-deep); font-weight:600; text-decoration:underline; text-decoration-color:rgba(156,59,46,.4);
+  text-underline-offset:2px; cursor:pointer; background:none; border:none; padding:0; font:inherit;
+}
+.timeline .place-link:hover{color:var(--seal);}
+
+/* map */
+#map{ height:420px; border-radius:var(--radius); border:1px solid var(--paper-line); }
+.leaflet-popup-content-wrapper{ font-family:var(--sans); border-radius:2px; }
+.leaflet-popup-content{ font-size:13px; line-height:1.5; }
+.popup-title{ font-weight:700; font-family:var(--serif); margin-bottom:4px; }
+
+/* place info cards */
+.places{margin-top:18px; display:grid; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); gap:14px;}
+.place-card{
+  background:var(--paper); border:1px solid var(--paper-line); border-radius:var(--radius);
+  padding:16px 18px; box-shadow:var(--shadow-card); transition:box-shadow .25s ease, transform .25s ease;
+  scroll-margin-top:100px;
+}
+.place-card.flash{ animation:flash 1.4s ease; }
+@keyframes flash{
+  0%{box-shadow:0 0 0 3px rgba(156,59,46,0);}
+  15%{box-shadow:0 0 0 3px rgba(156,59,46,.55);}
+  100%{box-shadow:0 0 0 3px rgba(156,59,46,0);}
+}
+.place-card h4{
+  font-family:var(--serif); font-size:14.5px; margin:0 0 8px; color:var(--ink-text); line-height:1.4;
+}
+.place-card p{font-size:12.8px; line-height:1.65; color:var(--ink-text-soft); margin:0; white-space:pre-line;}
+.place-card .pin-only{font-size:12px; color:var(--brass); font-style:italic;}
+.map-links{margin-top:10px; padding-top:9px; border-top:1px dashed var(--paper-line); display:flex; gap:14px;}
+.map-links a{font-family:var(--mono); font-size:11.5px; color:var(--seal-deep); text-decoration:none; font-weight:600;}
+.map-links a:hover{text-decoration:underline;}
+.leaflet-popup-content .map-links{border-top-color:#ddd;}
+
+/* hotel note */
+.hotel-box{
+  margin-top:18px; display:flex; gap:10px; align-items:flex-start; font-size:12.8px; color:var(--paper-2);
+  border-top:1px dashed rgba(217,185,120,.3); padding-top:14px;
+}
+.hotel-box b{color:var(--brass-bright); font-family:var(--serif); font-weight:700; display:block; font-size:13.5px; margin-bottom:2px;}
+.hotel-box .tel{font-family:var(--mono); color:var(--paper);}
+
+/* ============================================================
+   PARTICIPANTS
+   ============================================================ */
+.roster-head{color:var(--paper); margin-bottom:18px;}
+.roster-head h2{font-family:var(--serif); font-size:26px; margin:0 0 6px;}
+.roster-head p{font-size:13px; color:var(--paper-2); max-width:560px; line-height:1.7;}
+.roster-table{width:100%; border-collapse:collapse; background:var(--paper); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow-card);}
+.roster-table th{
+  text-align:left; font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--ink-text-soft); background:var(--paper-2); padding:10px 14px; border-bottom:1px solid var(--paper-line);
+}
+.roster-table td{padding:11px 14px; font-size:13.2px; border-bottom:1px solid rgba(199,180,137,.4);}
+.roster-table tr:last-child td{border-bottom:none;}
+.roster-table td.no{font-family:var(--mono); color:var(--ink-text-soft); width:36px;}
+.roster-table td.ename{font-family:var(--mono); font-size:12px; color:var(--ink-text-soft);}
+.gate-btn{
+  all:unset; cursor:pointer; font-family:var(--mono); font-size:11.5px; color:var(--seal-deep);
+  border:1px solid var(--seal-deep); border-radius:2px; padding:4px 8px; white-space:nowrap;
+}
+.gate-btn:hover{background:var(--seal-deep); color:var(--paper);}
+.passport-val{font-family:var(--mono); letter-spacing:.03em;}
+.passport-val.revealed{color:var(--ok-green); font-weight:600;}
+
+.gate-modal-backdrop{
+  position:fixed; inset:0; background:rgba(23,29,43,.7); display:none; align-items:center; justify-content:center; z-index:200; padding:20px;
+}
+.gate-modal-backdrop.open{display:flex;}
+.gate-modal{
+  background:var(--paper); border-radius:var(--radius); padding:26px 24px; max-width:340px; width:100%;
+  box-shadow:0 20px 60px rgba(0,0,0,.4);
+}
+.gate-modal h4{font-family:var(--serif); margin:0 0 6px; font-size:16px;}
+.gate-modal p{font-size:12.5px; color:var(--ink-text-soft); margin:0 0 14px; line-height:1.6;}
+.gate-modal input{
+  width:100%; font-family:var(--mono); font-size:16px; padding:10px 12px; border:1px solid var(--paper-line);
+  border-radius:2px; background:#fff; letter-spacing:.08em;
+}
+.gate-modal .row{display:flex; gap:10px; margin-top:14px;}
+.gate-modal button{
+  flex:1; font-family:var(--sans); font-weight:600; font-size:13px; padding:9px 0; border-radius:2px; border:none; cursor:pointer;
+}
+.gate-modal .confirm{background:var(--seal-deep); color:#fff;}
+.gate-modal .cancel{background:transparent; color:var(--ink-text-soft); border:1px solid var(--paper-line);}
+.gate-modal .err{color:var(--seal-deep); font-size:12px; margin-top:8px; display:none;}
+
+/* ============================================================
+   PACKING LIST
+   ============================================================ */
+.pack-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px;}
+.pack-card h3{font-family:var(--serif); font-size:14px; margin:0 0 12px; color:var(--ink-text);}
+.pack-item{display:flex; align-items:center; gap:10px; padding:7px 0; font-size:13px; border-bottom:1px dashed var(--paper-line);}
+.pack-item:last-child{border:none;}
+.pack-item input{width:16px; height:16px; accent-color:var(--seal-deep);}
+.pack-item.done label{text-decoration:line-through; color:var(--ink-text-soft); opacity:.6;}
+.pack-reset{margin-top:16px; font-family:var(--mono); font-size:11.5px; color:var(--paper-2); background:none; border:1px solid rgba(217,185,120,.35); padding:6px 12px; border-radius:2px; cursor:pointer;}
+.pack-reset:hover{color:var(--paper);}
+
+/* ============================================================
+   INFO PAGE
+   ============================================================ */
+.info-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px;}
+.info-card a.linkbtn{
+  display:inline-block; margin-top:10px; font-family:var(--mono); font-size:12px; color:var(--paper);
+  background:var(--seal-deep); padding:8px 14px; border-radius:2px; text-decoration:none;
+}
+.info-card a.linkbtn:hover{background:var(--seal);}
+.info-card ul{margin:8px 0 0; padding-left:18px; font-size:12.8px; line-height:1.7; color:var(--ink-text-soft);}
+.route-note{font-size:12.5px; color:var(--paper-2); line-height:1.8; max-width:720px; margin:0 0 20px;}
+
+footer{
+  text-align:center; padding:26px 20px 40px; color:var(--paper-2); font-family:var(--mono); font-size:11px; opacity:.6;
+}
+
+</style>
+</head>
+<body>
+<header class="cover">
+  <div class="grain"></div>
+  <div class="cover-inner">
+    <div class="eyebrow">(사)평화통일교육문화센터 · 단둥엔에스트래블</div>
+    <h1 class="title">임정루트 평화통일 기행<small>상하이 · 자싱 · 항저우 · 난징 — 대한민국임시정부의 자취를 따라</small></h1>
+    <p class="subtitle">1919년 상하이에서 태어나 자싱·항저우를 거쳐 난징에 이르기까지, 임시정부가 걸었던 피난과 항쟁의 길을 5일간 따라 걷습니다. 2026년 8월 26일(수) – 30일(일), 인천 출발.</p>
+
+    <div class="route" id="routeStrip"></div>
+
+    <div class="dday-row">
+      <div class="dday" id="ddayBox"><b id="ddayNum">–</b><span>D-DAY · 인천공항 06:00 미팅</span></div>
+      <div class="meta-note">전체 30명 · 전 일정 전용차량 37인승 리무진 · 쇼핑 없음</div>
+    </div>
+  </div>
+</header>
+
+<nav class="tabbar" id="tabbar"></nav>
+
+<main id="pages"></main>
+
+<div class="gate-modal-backdrop" id="gateBackdrop">
+  <div class="gate-modal">
+    <h4 id="gateName">본인 확인</h4>
+    <p>여권번호는 본인만 확인할 수 있도록 생년월일로 잠겨 있습니다. 생년월일 8자리(YYYYMMDD)를 입력해 주세요.</p>
+    <input id="gateInput" inputmode="numeric" maxlength="8" placeholder="예: 19860301">
+    <div class="err" id="gateErr">생년월일이 일치하지 않습니다.</div>
+    <div class="row">
+      <button class="cancel" id="gateCancel">취소</button>
+      <button class="confirm" id="gateConfirm">확인</button>
+    </div>
+  </div>
+</div>
+
+<footer>임정루트 평화통일 기행 · (사)평화통일교육문화센터 · 이 페이지는 참가자 공유용으로 제작되었습니다</footer>
+
+<script>
+/* ============================================================
+   DATA (injected at build time)
+   ============================================================ */
+const DAYS = {"day1": {"date": "2026-08-26", "label": "8/26(수)", "city": "상하이", "cityEn": "Shanghai", "title": "인천 출발 · 매헌의 자취", "weatherCoord": [31.2304, 121.4737], "timeline": [{"t": "06:00–08:00", "x": "인천공항 도착, 입국수속 및 미팅"}, {"t": "09:00–10:05", "x": "인천 → 상하이 푸둥국제공항 (KE881)", "ref": "상하이 푸둥 국제공항"}, {"t": "10:05–11:00", "x": "입국수속 후 가이드 미팅"}, {"t": "11:00–12:00", "x": "중식"}, {"t": "12:00–14:00", "x": "만국공묘 이동 · 상하이 독립운동가 묘 참배", "ref": "상하이 독립운동가 묘 (만국공묘)"}, {"t": "14:00–15:40", "x": "루쉰공원(전 홍커우공원) · 매헌기념관 참관", "ref": "매헌기념관"}, {"t": "15:40–16:30", "x": "윤봉길 신문지 터 찾아보기", "ref": "윤봉길 신문지 터 (상하이 일본 제1헌병분대)"}, {"t": "16:30–18:00", "x": "와이탄 부근 이동 · 석식"}, {"t": "18:00–20:30", "x": "와이탄 야경 · 옛 일본총영사관 건물 찾아보기", "ref": "구 상하이 일본영사관"}, {"t": "20:30–21:30", "x": "신천지 부근 · 호텔 체크인"}], "places": [{"name": "상하이 푸둥 국제공항", "coords": [31.1443439, 121.808273], "desc": ""}, {"name": "상하이 독립운동가 묘 (만국공묘)", "coords": [31.19735, 121.406114], "desc": "묘소는 상하이의 '만국공묘(萬國公墓)'에 있었다고 추정한다. 이 묘지는 1984년 쑹칭링 능원 외국인 묘역으로 이름이 바뀌었다. 신규식, 박은식 등의 독립운동가들도 이 곳에 장례를 지냈다. 그러나 김가진의 묘는 따로 묘지석을 비롯한 표시가 없어서 유해를 찾을 수 없다."}, {"name": "루쒼공원(전 홍커우공원) 정문", "coords": [31.270316, 121.478105], "desc": "루쒼공원(전 홍커우공원)은 중국의 과거와 오늘을 동시에 만날 수 있는 장소다."}, {"name": "매헌기념관", "coords": [31.274906, 121.479062], "desc": "윤봉길이 의거를 결행한 상하이 훙커우공원에 세워진 기념관"}, {"name": "윤봉길 의사 의거지_홍커우공원(현 루쉰공원)", "coords": [31.274049, 121.478287], "desc": "윤봉길 의사가 1932년 4월 29일 상하이 훙커우공원(현 루쉰공원)에서 일왕 생일 기념식이 열리던 단상에 폭탄을 투척한 의거 현장."}, {"name": "윤봉길 신문지 터 (상하이 일본 제1헌병분대)", "coords": [31.268721, 121.478088], "desc": "윤봉길이 훙커우공원의거 직후 피체되어 신문을 받았던 장소"}, {"name": "구 상하이 일본영사관", "coords": [31.245971, 121.488324], "desc": "와이탄 인근에 위치했던 옛 주상하이 일본총영사관 건물. 윤봉길 의거 이후 관련 수사가 이뤄진 곳 중 하나로 거론된다."}], "hotel": {"name": "上海华美国际酒店 (★★★★)", "addr": "西藏南路381号 / 淮海路 / 新天地", "note": "상하이 임정청사와 약 1km", "tel": "021-5383 8588"}}, "day2": {"date": "2026-08-27", "label": "8/27(목)", "city": "상하이 → 자싱", "cityEn": "Shanghai → Jiaxing", "title": "대한민국임시정부, 상하이의 발자취", "weatherCoord": [30.7469, 120.7551], "timeline": [{"t": "06:30–08:30", "x": "조식"}, {"t": "08:30–12:00", "x": "도보 답사: 임정 마지막 청사(마랑로 보경리 4호) → 신채호 거주지 터 → 요인 거주지(영경방) → 원창리 13호 → 신규식 거주지(남창로 100롱 5호)"}, {"t": "12:00–13:00", "x": "중식"}, {"t": "13:00–16:00", "x": "임정 상하이 두번째·세번째 청사 터(하비로 321호) · 첫 청사 추정지(김신부로 22호) 찾아보기"}, {"t": "16:00–18:00", "x": "상하이 → 자싱 이동"}, {"t": "18:00–19:30", "x": "석식"}, {"t": "19:30–21:00", "x": "호텔 체크인 후 자유시간"}], "places": [{"name": "대한민국임시정부 상하이 마지막 청사(마랑로 보경리 4호)", "coords": [31.2192213, 121.4701593], "desc": "대한민국 임시정부가 1926년부터 1932년까지 사용한 청사(백래니몽 마랑로 보경리 4호 / 白來尼夢 馬浪路 普慶里 4號)"}, {"name": "상하이 신채호 거주지 터", "coords": [31.222842, 121.469307], "desc": "신채호가 1919년 상해 대한민국임시정부에 참여하고 《신대한》을 발행하는 등 상해에서 머무를 때 이동녕ㆍ조성환 등과 함께 사용했던 숙소(여관)이다.\n그러나 주변지역이 재개발되어 당시의 모습이 전혀 남아 있지 않고, 현재 '신무대하'로 사용 중이다."}, {"name": "상하이 대한민국임시정부 요인 거주지 (영경방)", "coords": [31.222649, 121.470745], "desc": "그중 영경방 10호는 김가진의 아들 김의한과 정정화 부부가 거주했던 곳이었다.\n上海市 黄陂南路 350弄 一带"}, {"name": "원창리 13호(김해산 거주지, 김구 선생과 윤봉길 의사 시계 교환 장소)", "coords": [31.222027, 121.465241], "desc": "윤 의사와 김구 선생의 이별 장소 역시 지도에 정확하게 표기한 뒤 이동하는 것을 추천한다. 원창리 13호는 지하철 13호선 회해중로역(淮海中路/Huaihai Middle Road)역과 1호선 황피남로(黃陂南路/Huangpi South Road)역 중간에 위치해 있다. 회해중로역 1번 출구를 나와 황피남로역 방향으로 가다보면 양당로(Yang dang Rd)가 나온다. 그곳에서 남쪽으로 300미터 내려가다보면 우측에 '원창리'라는 표지석이 보인다. 들어가자마자 우측 첫 번째 집이 원창리 13호다. 예관 선생의 집과 마찬가지로 원창리 13호는 임시정부 첫 번째 청사 추정지인 서금이로와 두 번째 청사 추정지인 회해중로 H&M 건물과 모두 10분 거리에 있다."}, {"name": "상하이 신규식 거주지(남창로 100롱 5호)", "coords": [31.221527, 121.464227], "desc": "1911년 신규식이 상하이 망명 후 거주 및 활동했던 건물"}, {"name": "신청년(新青年) 편집국(남창로 100롱 2호)", "coords": [31.22138, 121.464294], "desc": "'신청년(新青年)'은 1915년 9월, 천두슈가 상하이에서 창간한 중국의 진보적 성향의 잡지입니다. 처음에는 '청년잡지'로 불리다가 이후 '신청년'으로 제호를 바꾸었으며, 신문화운동과 5.4 운동에 큰 영향을 미쳤습니다. 중국 공산당 창당 이후에는 중국 공산당의 기관지 역할을 하기도 했습니다.\n창간일 및 창간자: 1915년 9월 15일, 천두슈(陳獨秀)\n이곳은 중국공산당 제1차 전국대표대회 준비처로도 사용되었다."}, {"name": "대한민국임시정부 상하이  두번째 또는 세번째 청사 터(하비로 321호)", "coords": [31.22147, 121.46151], "desc": ""}, {"name": "대한민국임시정부 상하이 첫 청사 추정(김신부로 22호, 하비로 460호)", "coords": [31.220516, 121.459444], "desc": "상하이 지하철 회해중로(Middle Huaihai Road)역에서 하차. 1번 출구로 나와서 바로 보이는 길이 회해중로다. 이 길을 따라 우측으로 약 200m 정도 이동하면 회해중로와 서금이로가 만나는 지점이 나온다. 이곳에서부터 아래쪽으로 난 길이 모두 서금이로, 옛 김신부로다. 이곳 어딘가에서 우리 역사에서 처음으로 대한민국 민주공화제 정부가 탄생했다. 1919년 4월 11일의 일이다."}], "hotel": {"name": "嘉兴沙龙国际酒店 (★★★★)", "addr": "环城南路393号", "note": "김구 피난처와 약 400m", "tel": "0573-8391 8888"}}, "day3": {"date": "2026-08-28", "label": "8/28(금)", "city": "자싱 → 항저우 → 난징", "cityEn": "Jiaxing → Hangzhou → Nanjing", "title": "피난의 길, 자싱과 항저우", "weatherCoord": [30.2741, 120.1551], "timeline": [{"t": "06:30–08:30", "x": "조식"}, {"t": "08:30–10:00", "x": "자싱 임정 요인 거주지(매만가 17호) · 김구 피난처(매만가 76호)"}, {"t": "10:00–12:00", "x": "자싱 → 항저우, 임정 청사터 부근 이동"}, {"t": "12:00–13:00", "x": "중식"}, {"t": "13:00–17:00", "x": "서호 호수공원 · 임정 청사 터(청태 제2여사) · 한국독립당 사무소(사흠방) · 요인 거주지(오복리)"}, {"t": "17:00–18:00", "x": "석식"}, {"t": "18:00–22:00", "x": "항저우 → 난징 이동"}, {"t": "22:00–21:30", "x": "호텔 체크인 후 휴식"}], "places": [{"name": "대한민국 임시정부 요인 자싱 거주지", "coords": [30.75624, 120.744038], "desc": "대한민국 임시정부 요인 자싱 거주지, 매만가 17호다. 김구선생 피난지 매만가 76호와 걸어서 3분 거리다. 다만 주소가 명확하지 않아 지도상 찾기가 매우 어렵다. 정정화 여사를 비롯해, 엄항섭 선생 가족 등 임정 가족들의 생활을 온전히 엿볼 수 있다."}, {"name": "자싱 김구 피난처", "coords": [30.755544, 120.742005], "desc": "윤봉길 의거 직후 일제의 검거를 피해 자싱으로 피신한 김구가 피난처로 이용했던 건물"}, {"name": "서호 호수공원(湖滨公园)", "coords": [30.258729, 120.154577], "desc": "임시정부 요인 가족들의 자취가 남은 서호(西湖) 일대. 항저우 청사터, 사흠방과 도보로 이어지는 답사 코스의 중심이다."}, {"name": "대한민국임시정부 항저우 청사 터 (청태 제2여사)", "coords": [30.252951, 120.165413], "desc": "대한민국 임시정부가 상하이를 떠나 항저우에 도착한 직후 청사로 사용했던 건물 터\n*중국 내국인 전용 숙소로 운영. 투숙은 어렵지만 내부 로비 입장은 가능"}, {"name": "항저우 한국독립당 사무소 (사흠방)", "coords": [30.257967, 120.160899], "desc": "대한민국 임시정부의 여당 한국독립당이 항저우로 이동한 뒤 사무실로 사용했던 건물"}, {"name": "항저우 대한민국임시정부 요인 거주지 (오복리)", "coords": [30.255747, 120.161435], "desc": "대한민국 임시정부 요인의 가족들이 1934년 11월 오복리 2호 건물로 이주하여 거주했던 장소"}, {"name": "대한민국임시정부 항저우 청사 (호변촌 23호)", "coords": [30.259104, 120.156631], "desc": "항저우시기 대한민국 임시정부가 청태제2여사 32호 이후 마련한 청사"}], "hotel": {"name": "大观视界酒店/南京西站阅江楼景区店 (★★★★)", "addr": "建宁路300号", "note": "난징대학살 기념관과 약 7km", "tel": "025-5858 1155"}}, "day4": {"date": "2026-08-29", "label": "8/29(토)", "city": "난징", "cityEn": "Nanjing", "title": "난징, 역사와 마주하다", "weatherCoord": [32.0603, 118.7969], "timeline": [{"t": "06:30–08:30", "x": "조식"}, {"t": "08:30–10:00", "x": "난징대학살 희생자 기념관 참관"}, {"t": "10:00–13:00", "x": "조선혁명군사정치간부학교 훈련소(천녕사) 찾아보기"}, {"t": "13:00–14:00", "x": "중식(중국요리, 사전예약)"}, {"t": "14:00–15:30", "x": "난징대학(옛 금릉대학) 방문"}, {"t": "15:30–18:00", "x": "중앙반점: 김구 선생이 장제스 총통과 회담을 위해 머문 곳"}, {"t": "18:00–19:30", "x": "석식"}, {"t": "19:30–21:00", "x": "호텔 복귀 및 자유시간"}], "places": [{"name": "난징 대학살 희생자 기념관", "coords": [32.037261, 118.737279], "desc": ""}, {"name": "난징 조선혁명군사정치간부학교 훈련소 (천녕사)", "coords": [31.975304, 118.90585], "desc": "조선혁명군사정치간부학교 제3기생의 훈련장소"}, {"name": "난징 대학(정문) 옛 금릉대", "coords": [32.055781, 118.775403], "desc": "약산 김원봉이 이곳에 오기 전 중앙고등학교(중앙학교)에서 누구를 만나냐. 친구인 약수(김두전)와 여성(이명건)을 만납니다. 그래서 김약산, 김약수, 이여성... 산(山)처럼, 물(水)처럼, 별(星)처럼, 이 친구 세 명이 의기투합해서 온 곳이 여기 금릉대 영문과"}, {"name": "난징대학 대례당(조선혁명당이 탄생한 곳)", "coords": [32.0581, 118.775366], "desc": "Nanjing University Gulou Campus-Auditorium\n1935년 7월, 김원봉 장군은 다시 금릉대학을 찾는다. 금름대학 강당인 대례당에서 의열단과, 신익희 선생의 신한독립당, 최동오 선생의 조선혁명당, 김두봉 조소앙의 한국독립당, 김규식 선생의 미주한인독립당 이외에 최창익 등 사회주의 계열의 인사들이 하나돼 조선민족혁명당을 만들었기 때문이다.\n임시정부의 참여는 이뤄지지 않았으나 제대로된 항일투쟁을 위한 거국적인 움직임이 일어난 것이다. 그러나 이 역시도 오래가지 못했다. 같은해 김구 선생과 이동녕 선생은 한국국민당을 설립했다. 조선민족혁명당 역시 내부 분열로 최초의 뜻을 이어가지 못했다.\n현재 금릉대학(현 난징대학)에서 유일하게 김원봉 장군과 애국지사들의 흔적을 유추할 수 있는 두 곳이 바로 금릉대학 대례당 뿐이다."}, {"name": "중앙반점(中央饭店) 투숙가능", "coords": [32.043487, 118.79236], "desc": "윤봉길 의사 의거 후, 1933년 5월 김구 선생이 장제스와 회담을 위해 묶었던 곳. 회담은 중앙반점 옆에 있는 총통부에서 진행. 회담을 계기로 낙양군관학교 한인 특별반 개설."}, {"name": "회청교_김구 선생 난징 피난처", "coords": [32.025703, 118.788914], "desc": "중국 장쑤 성 난징 시 백범이 난징에 머물 때 살았던 곳이다. 일제의 압박이 심해지자 자싱에서 주애보를 올라오도록 해 이 지역에서 같이 살았다. 김구 선생은 고물상 행세를 했고, 회청교 인근에 항상 도망칠 수 준비해 놨다."}], "hotel": {"name": "南京中央饭店 (★★★★★)", "addr": "中山东路237号", "note": "리지샹위안소 유적 진열관과 약 330m", "tel": "025-8315 0888"}}, "day5": {"date": "2026-08-30", "label": "8/30(일)", "city": "난징 → 인천", "cityEn": "Nanjing → Incheon", "title": "기억을 새기고, 다시 만날 날을 기약하며", "weatherCoord": [32.0603, 118.7969], "timeline": [{"t": "06:30–08:30", "x": "조식"}, {"t": "09:00–11:00", "x": "리지샹 위안소 유적 진열관 참관"}, {"t": "11:00–12:00", "x": "중식"}, {"t": "12:00–13:00", "x": "난징 → 난징공항 이동"}, {"t": "13:00–14:00", "x": "공항 도착 및 탑승 준비"}, {"t": "14:40–18:15", "x": "난징 → 인천 (KE102)"}, {"t": "19:30~", "x": "인천 도착, 다음을 기약하며 해산"}], "places": [{"name": "난징 리지샹 위안소 유적진열관", "coords": [32.041059, 118.792481], "desc": ""}, {"name": "난징 루커우 국제공항", "coords": [31.73284, 118.87181], "desc": ""}], "hotel": null}};
+const PARTICIPANTS = [{"no": 1, "name": "정성일", "ename": "JEONG SUNG IL", "birth": "19860301", "passportMasked": "M******55", "expiry": "2034.02.01"}, {"no": 2, "name": "임재근", "ename": "LIM JAEGEUN", "birth": "19780729", "passportMasked": "M******11", "expiry": "2028.04.10"}, {"no": 3, "name": "박규용", "ename": "PARK KYU YONG", "birth": "19600116", "passportMasked": "M******92", "expiry": "2029.01.16"}, {"no": 4, "name": "김병국", "ename": "KIM BYONG KOOK", "birth": "19591203", "passportMasked": "M******69", "expiry": "2029.06.27"}, {"no": 5, "name": "홍길순", "ename": "HONG GIL SOON", "birth": "19600305", "passportMasked": "M******70", "expiry": "2029.12.20"}, {"no": 6, "name": "이강진", "ename": "LEE GANGJIN", "birth": "19661029", "passportMasked": "M******96", "expiry": "2033.04.07"}, {"no": 7, "name": "김조영", "ename": "KIM CHOYOUNG", "birth": "19650930", "passportMasked": "M******19", "expiry": "2032.12.20"}, {"no": 8, "name": "조미정", "ename": "JO MIJEONG", "birth": "19670205", "passportMasked": "M******74", "expiry": "2033.04.20"}, {"no": 9, "name": "이은하", "ename": "LEE EUNHA", "birth": "19740130", "passportMasked": "M******54", "expiry": "2029.01.07"}, {"no": 10, "name": "신성용", "ename": "SHIN SUNGYONG", "birth": "19780527", "passportMasked": "M******21", "expiry": "2029.11.25"}, {"no": 11, "name": "홍진석", "ename": "HONG JINSEOK", "birth": "19830914", "passportMasked": "M******16", "expiry": "2028.11.01"}, {"no": 12, "name": "양진오", "ename": "YANG JINO", "birth": "19651031", "passportMasked": "M******54", "expiry": "2027.10.16"}, {"no": 13, "name": "이하은", "ename": "LEE HA EUN", "birth": "19930213", "passportMasked": "M******47", "expiry": "2033.08.08"}, {"no": 14, "name": "전용숙", "ename": "JEON YONGSOOK", "birth": "19730216", "passportMasked": "M******94", "expiry": "2036.05.07"}, {"no": 15, "name": "김경민", "ename": "KIM KYUNGMIN", "birth": "19810502", "passportMasked": "M******99", "expiry": "2035.12.09"}, {"no": 16, "name": "장우찬", "ename": "CHANG WOOCHAN", "birth": "19740528", "passportMasked": "M******58", "expiry": "2033.07.13"}, {"no": 17, "name": "박시윤", "ename": "PARK SIYUN", "birth": "19780727", "passportMasked": "M******85", "expiry": "2035.12.30"}, {"no": 18, "name": "김언순", "ename": "KIM EONSOON", "birth": "19640505", "passportMasked": "M******31", "expiry": "2036.06.18"}, {"no": 19, "name": "박민서", "ename": "PARK MINSEO", "birth": "19680411", "passportMasked": "M******63", "expiry": "2028.04.12"}, {"no": 20, "name": "조현중", "ename": "CHO HYUNJUNG", "birth": "19590912", "passportMasked": "M******34", "expiry": "2034.10.05"}, {"no": 21, "name": "김이경", "ename": "KIM EEKYONG", "birth": "19640505", "passportMasked": "M******12", "expiry": "2033.11.10"}, {"no": 22, "name": "박성규", "ename": "PARK SUNGKYU", "birth": "19650221", "passportMasked": "M******82", "expiry": "2029.05.15"}, {"no": 23, "name": "공금란", "ename": "GONG GUM-RAN", "birth": "19650925", "passportMasked": "M******00", "expiry": "2031.05.18"}, {"no": 24, "name": "노정희", "ename": "NOH JEONG HEE", "birth": "19680421", "passportMasked": "M******57", "expiry": "2029.11.11"}, {"no": 25, "name": "이주영", "ename": "Lee Jooyoung", "birth": "19661216", "passportMasked": "M******73", "expiry": "2035.05.22"}, {"no": 26, "name": "이가연", "ename": "YI KAYOUN", "birth": "19680714", "passportMasked": "M******94", "expiry": "2033.03.09"}, {"no": 27, "name": "최강석", "ename": "CHOE GANG SUK", "birth": "19730410", "passportMasked": "M******48", "expiry": "2034.01.31"}, {"no": 28, "name": "김화선", "ename": "KIM HWASEON", "birth": "19700925", "passportMasked": "M******57", "expiry": "2028.12.26"}, {"no": 29, "name": "구자현", "ename": "GOO JAHYUN", "birth": "19890913", "passportMasked": "M******70", "expiry": "2033.05.25"}, {"no": 30, "name": "정성임", "ename": "JEONG SEONGIM", "birth": "19660520", "passportMasked": "M******73", "expiry": "2028.06.26"}];
+
+const DAY_ORDER = ['day1','day2','day3','day4','day5'];
+const TAB_LABELS = {
+  day1:'8/26 상하이', day2:'8/27 상하이→자싱', day3:'8/28 자싱→항저우→난징',
+  day4:'8/29 난징', day5:'8/30 난징→인천',
+  roster:'참가자', packing:'준비물', info:'항공 · 숙소'
+};
+
+let currentTab = 'day1';
+let leafletMap = null;
+
+/* ============================================================
+   TAB BAR + ROUTE STAMP STRIP
+   ============================================================ */
+function buildTabbar(){
+  const bar = document.getElementById('tabbar');
+  const allTabs = [...DAY_ORDER, 'roster', 'packing', 'info'];
+  bar.innerHTML = allTabs.map(t => `<button class="tab" data-tab="${t}">${TAB_LABELS[t]}</button>`).join('');
+  bar.querySelectorAll('.tab').forEach(btn=>{
+    btn.addEventListener('click', ()=> switchTab(btn.dataset.tab));
+  });
+}
+
+function buildRouteStrip(){
+  const strip = document.getElementById('routeStrip');
+  const rots = [-4, 3, -3, 4, -2];
+  strip.innerHTML = DAY_ORDER.map((d,i)=>{
+    const info = DAYS[d];
+    const short = info.city.split(' ')[0];
+    return `<button class="stamp-btn" data-tab="${d}" style="--rot:${rots[i]}deg">
+      <div class="stamp"><span class="d">D${i+1}</span><span class="n">${short}</span></div>
+      <span class="city">${info.label}</span>
+    </button>`;
+  }).join('');
+  strip.querySelectorAll('.stamp-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=> switchTab(btn.dataset.tab));
+  });
+}
+
+function switchTab(tab){
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(b=> b.classList.toggle('active', b.dataset.tab===tab));
+  document.querySelectorAll('.stamp-btn').forEach(b=> b.classList.toggle('active', b.dataset.tab===tab));
+  document.querySelectorAll('.page').forEach(p=> p.classList.toggle('active', p.id==='page-'+tab));
+  window.scrollTo({top:0, behavior:'smooth'});
+  if (DAY_ORDER.includes(tab)) requestAnimationFrame(()=> initMapForDay(tab));
+}
+
+/* ============================================================
+   DAY PAGE RENDERING
+   ============================================================ */
+function slugify(name){
+  return 'p-' + name.replace(/[^\w가-힣]+/g,'').slice(0,40);
+}
+
+function renderDayPage(dayKey, idx){
+  const d = DAYS[dayKey];
+  const timelineHtml = d.timeline.map(item=>{
+    let text = item.x;
+    if (item.ref){
+      const id = slugify(item.ref);
+      text = text.replace(item.ref, `<button class="place-link" data-target="${id}">${item.ref}</button>`);
+    }
+    return `<li><span class="tt">${item.t}</span>${text}</li>`;
+  }).join('');
+
+  const placesHtml = d.places.map(p=>{
+    const id = slugify(p.name);
+    const body = p.desc && p.desc.trim()
+      ? `<p>${escapeHtml(p.desc)}</p>`
+      : `<p class="pin-only">· 설명 자료 없음 — 지도 위치만 표시됩니다</p>`;
+    const linksHtml = p.coords ? mapLinksHtml(p.coords, p.name) : '';
+    return `<div class="place-card" id="${id}" data-lat="${p.coords?p.coords[0]:''}" data-lng="${p.coords?p.coords[1]:''}">
+      <h4>${escapeHtml(p.name)}</h4>${body}${linksHtml}
+    </div>`;
+  }).join('');
+
+  const hotelHtml = d.hotel ? `
+    <div class="hotel-box">
+      <div>🏨</div>
+      <div><b>${escapeHtml(d.hotel.name)}</b>${escapeHtml(d.hotel.addr)} · ${escapeHtml(d.hotel.note)}<br><span class="tel">${escapeHtml(d.hotel.tel)}</span></div>
+    </div>` : '';
+
+  return `
+  <section class="page" id="page-${dayKey}">
+    <div class="day-head">
+      <div>
+        <div class="day-date">DAY ${idx+1} · ${d.label}</div>
+        <h2>${escapeHtml(d.title)}</h2>
+      </div>
+      <div class="weather-chip" id="weather-${dayKey}"><span class="ic">☁︎</span><span>날씨 불러오는 중…</span></div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h3>일정</h3>
+        <ul class="timeline">${timelineHtml}</ul>
+        ${hotelHtml}
+      </div>
+      <div class="card">
+        <h3>지도</h3>
+        <div id="map-${dayKey}" style="height:420px;border-radius:3px;border:1px solid var(--paper-line);"></div>
+      </div>
+    </div>
+    <div class="places">${placesHtml}</div>
+  </section>`;
+}
+
+function escapeHtml(s){
+  return (s||'').replace(/[&<>"']/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function mapLinksHtml(coords, name){
+  const [lat, lng] = coords;
+  const gmaps = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+  // Web fallback: Amap accepts WGS-84 input directly via coordinate=wgs84, converting internally.
+  const amapWeb = `https://uri.amap.com/marker?position=${lng},${lat}&name=${encodeURIComponent(name)}&coordinate=wgs84&callnative=0`;
+  return `<div class="map-links">
+    <a href="${gmaps}" target="_blank" rel="noopener">구글맵 →</a>
+    <a href="${amapWeb}" class="amap-link" data-lat="${lat}" data-lng="${lng}" data-name="${escapeHtml(name)}" target="_blank" rel="noopener">고덕지도(Amap) →</a>
+  </div>`;
+}
+
+// Try opening the Amap native app directly (iOS/Android URL scheme, dev=1 = "input is WGS-84, please convert").
+// If the app isn't installed, nothing happens on-screen and we fall back to the web version after a short timeout.
+// This also covers in-app browsers (e.g. KakaoTalk) where the plain https://uri.amap.com universal link sometimes
+// doesn't hand off to the installed app the way it does in a regular mobile browser.
+function openAmapApp(lat, lng, name, webUrl){
+  const ua = navigator.userAgent || '';
+  const isIOS = /iPhone|iPad|iPod/i.test(ua);
+  const isAndroid = /Android/i.test(ua);
+  if (!isIOS && !isAndroid){
+    window.open(webUrl, '_blank');
+    return;
+  }
+  const scheme = isIOS
+    ? `iosamap://viewMap?sourceApplication=imjeongroute&poiname=${encodeURIComponent(name)}&lat=${lat}&lon=${lng}&dev=1`
+    : `androidamap://viewMap?sourceApplication=imjeongroute&poiname=${encodeURIComponent(name)}&lat=${lat}&lon=${lng}&dev=1`;
+  let fellBack = false;
+  const fallbackTimer = setTimeout(()=>{
+    if (!document.hidden){ fellBack = true; window.location.href = webUrl; }
+  }, 1200);
+  document.addEventListener('visibilitychange', function onHide(){
+    if (document.hidden){ clearTimeout(fallbackTimer); document.removeEventListener('visibilitychange', onHide); }
+  });
+  window.location.href = scheme;
+}
+
+document.addEventListener('click', (e)=>{
+  const a = e.target.closest('.amap-link');
+  if (a){
+    e.preventDefault();
+    openAmapApp(a.dataset.lat, a.dataset.lng, a.dataset.name, a.href);
+  }
+});
+
+/* ============================================================
+   WGS-84 -> GCJ-02 (China "Mars" coordinate offset)
+   Amap's tiles are drawn in GCJ-02, while our KMZ-sourced place
+   data is true WGS-84. Without this conversion, markers would
+   appear shifted ~100-700m from the correct spot on an Amap
+   basemap — the exact mismatch this thread has been chasing,
+   just introduced from the other direction.
+   ============================================================ */
+const GCJ_A = 6378245.0;
+const GCJ_EE = 0.00669342162296594323;
+function outOfChina(lng, lat){
+  return lng < 72.004 || lng > 137.8347 || lat < 0.8293 || lat > 55.8271;
+}
+function gcjTransformLat(x, y){
+  let ret = -100.0 + 2.0*x + 3.0*y + 0.2*y*y + 0.1*x*y + 0.2*Math.sqrt(Math.abs(x));
+  ret += (20.0*Math.sin(6.0*x*Math.PI) + 20.0*Math.sin(2.0*x*Math.PI)) * 2.0/3.0;
+  ret += (20.0*Math.sin(y*Math.PI) + 40.0*Math.sin(y/3.0*Math.PI)) * 2.0/3.0;
+  ret += (160.0*Math.sin(y/12.0*Math.PI) + 320*Math.sin(y*Math.PI/30.0)) * 2.0/3.0;
+  return ret;
+}
+function gcjTransformLng(x, y){
+  let ret = 300.0 + x + 2.0*y + 0.1*x*x + 0.1*x*y + 0.1*Math.sqrt(Math.abs(x));
+  ret += (20.0*Math.sin(6.0*x*Math.PI) + 20.0*Math.sin(2.0*x*Math.PI)) * 2.0/3.0;
+  ret += (20.0*Math.sin(x*Math.PI) + 40.0*Math.sin(x/3.0*Math.PI)) * 2.0/3.0;
+  ret += (150.0*Math.sin(x/12.0*Math.PI) + 300.0*Math.sin(x/30.0*Math.PI)) * 2.0/3.0;
+  return ret;
+}
+function wgs84ToGcj02(lat, lng){
+  if (outOfChina(lng, lat)) return [lat, lng];
+  let dlat = gcjTransformLat(lng - 105.0, lat - 35.0);
+  let dlng = gcjTransformLng(lng - 105.0, lat - 35.0);
+  const radlat = lat / 180.0 * Math.PI;
+  let magic = Math.sin(radlat);
+  magic = 1 - GCJ_EE * magic * magic;
+  const sqrtmagic = Math.sqrt(magic);
+  dlat = (dlat * 180.0) / ((GCJ_A * (1 - GCJ_EE)) / (magic * sqrtmagic) * Math.PI);
+  dlng = (dlng * 180.0) / (GCJ_A / sqrtmagic * Math.cos(radlat) * Math.PI);
+  return [lat + dlat, lng + dlng];
+}
+
+/* ============================================================
+   MAP
+   ============================================================ */
+const mapInstances = {};
+function initMapForDay(dayKey){
+  const d = DAYS[dayKey];
+  const containerId = 'map-'+dayKey;
+  const el = document.getElementById(containerId);
+  if (!el || el.dataset.inited) { if(mapInstances[dayKey]) mapInstances[dayKey].invalidateSize(); return; }
+  el.dataset.inited = '1';
+
+  const pts = d.places.filter(p=>p.coords);
+  const gcjPts = pts.map(p=> wgs84ToGcj02(p.coords[0], p.coords[1]));
+  const center = gcjPts.length ? gcjPts[Math.floor(gcjPts.length/2)] : [31.23,121.47];
+  const map = L.map(containerId, {scrollWheelZoom:false}).setView(center, 12);
+  L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
+    subdomains:['1','2','3','4'], maxZoom:18, attribution:'&copy; 高德地图 AutoNavi'
+  }).addTo(map);
+
+  const bounds = [];
+  pts.forEach((p,i)=>{
+    const id = slugify(p.name);
+    const gcj = gcjPts[i];
+    const marker = L.marker(gcj).addTo(map);
+    marker.bindPopup(`<div class="popup-title">${escapeHtml(p.name)}</div>${p.desc? escapeHtml(p.desc).slice(0,140)+(p.desc.length>140?'…':'') : '<span style="color:#8a7f66">설명 자료 없음</span>'}${mapLinksHtml(p.coords, p.name)}`);
+    marker.on('click', ()=> jumpToPlace(id));
+    bounds.push(gcj);
+  });
+  if (bounds.length>1) map.fitBounds(bounds, {padding:[26,26]});
+  mapInstances[dayKey] = map;
+}
+
+function jumpToPlace(id){
+  const card = document.getElementById(id);
+  if (!card) return;
+  card.scrollIntoView({behavior:'smooth', block:'center'});
+  card.classList.remove('flash'); void card.offsetWidth; card.classList.add('flash');
+}
+
+document.addEventListener('click', (e)=>{
+  const btn = e.target.closest('.place-link');
+  if (btn) jumpToPlace(btn.dataset.target);
+});
+
+/* ============================================================
+   WEATHER (Open-Meteo)
+   ============================================================ */
+const CLIMATE_FALLBACK = {
+  '상하이':'8월 평균 26–33℃ · 고온다습, 소나기 대비 우산 권장',
+  '자싱':'8월 평균 26–33℃ · 고온다습, 소나기 대비 우산 권장',
+  '항저우':'8월 평균 27–34℃ · 고온다습, 소나기 대비 우산 권장',
+  '난징':'8월 평균 27–34℃ · "중국 3대 화로" 중 하나로 매우 무더움',
+};
+async function loadWeather(dayKey){
+  const d = DAYS[dayKey];
+  const el = document.getElementById('weather-'+dayKey);
+  if (!el) return;
+  const [lat,lng] = d.weatherCoord;
+  const cityShort = d.city.split(/[·→ ]/).filter(Boolean)[0];
+  try{
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FShanghai&start_date=${d.date}&end_date=${d.date}`;
+    const res = await fetch(url);
+    const j = await res.json();
+    if (j.daily && j.daily.time && j.daily.time.length && j.daily.temperature_2m_max[0]!=null){
+      const max = Math.round(j.daily.temperature_2m_max[0]);
+      const min = Math.round(j.daily.temperature_2m_min[0]);
+      const pop = j.daily.precipitation_probability_max ? j.daily.precipitation_probability_max[0] : null;
+      el.innerHTML = `<span class="ic">⛅</span><span>${cityShort} ${min}°–${max}°${pop!=null?` · 강수확률 ${pop}%`:''}</span>`;
+      return;
+    }
+    throw new Error('no-data');
+  }catch(err){
+    const fb = CLIMATE_FALLBACK[cityShort] || '평년 기후 정보 확인 중';
+    el.innerHTML = `<span class="ic">☁︎</span><span>${cityShort} 예보 준비 중 · ${fb}</span>`;
+  }
+}
+
+/* ============================================================
+   D-DAY COUNTDOWN
+   ============================================================ */
+function startCountdown(){
+  const target = new Date('2026-08-26T06:00:00+09:00').getTime();
+  function tick(){
+    const now = Date.now();
+    const diff = target - now;
+    const el = document.getElementById('ddayNum');
+    if (diff <= 0){ el.textContent = 'D-DAY'; return; }
+    const days = Math.floor(diff / 86400000);
+    el.textContent = `D-${days}`;
+  }
+  tick();
+  setInterval(tick, 60000);
+}
+
+/* ============================================================
+   PARTICIPANT ROSTER + BIRTHDATE GATE
+   ============================================================ */
+let gateTarget = null;
+function renderRosterPage(){
+  const rows = PARTICIPANTS.map(p=>`
+    <tr>
+      <td class="no">${p.no}</td>
+      <td>${escapeHtml(p.name)}</td>
+      <td class="ename">${escapeHtml(p.ename)}</td>
+      <td class="ename">${escapeHtml(p.expiry)}</td>
+      <td>
+        <span class="passport-val" id="pv-${p.no}">••••••••</span>
+        <button class="gate-btn" data-no="${p.no}">본인 확인</button>
+      </td>
+    </tr>`).join('');
+
+  return `
+  <section class="page" id="page-roster">
+    <div class="roster-head">
+      <h2>참가자 명단</h2>
+      <p>여권번호는 개인정보 보호를 위해 가려져 있습니다. 본인의 생년월일을 입력하면 본인 항목의 마스킹된 여권번호를 확인할 수 있습니다. (이 페이지는 화면 UI 상의 편의 기능일 뿐, 여권번호 확인을 위한 원본 데이터는 공유되지 않습니다.)</p>
+    </div>
+    <table class="roster-table">
+      <thead><tr><th>No</th><th>이름</th><th>영문 성명</th><th>여권 만료일</th><th>여권번호</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </section>`;
+}
+
+function openGate(no){
+  gateTarget = no;
+  const p = PARTICIPANTS.find(x=>x.no==no);
+  document.getElementById('gateName').textContent = `${p.name} 님 본인 확인`;
+  document.getElementById('gateInput').value = '';
+  document.getElementById('gateErr').style.display = 'none';
+  document.getElementById('gateBackdrop').classList.add('open');
+  document.getElementById('gateInput').focus();
+}
+function closeGate(){
+  document.getElementById('gateBackdrop').classList.remove('open');
+  gateTarget = null;
+}
+function confirmGate(){
+  const p = PARTICIPANTS.find(x=>x.no==gateTarget);
+  const val = document.getElementById('gateInput').value.trim();
+  if (!p) return;
+  if (val === p.birth){
+    const el = document.getElementById('pv-'+p.no);
+    el.textContent = p.passportMasked;
+    el.classList.add('revealed');
+    closeGate();
+  } else {
+    document.getElementById('gateErr').style.display = 'block';
+  }
+}
+
+/* ============================================================
+   PACKING CHECKLIST
+   ============================================================ */
+const PACKING = {
+  '신분 · 서류':['여권 (유효기간 6개월 이상 확인)','여권 사본/사진 (분실 대비)','카드 · 소액 현금(위안화)'],
+  '의류 · 착용':['간절기 없는 무더위 대비 여름옷','도보 답사용 편한 운동화','우산 또는 우비(소나기 대비)','모자 · 선글라스','얇은 겉옷(실내 냉방 대비)'],
+  '건강 · 위생':['상비약(해열제·소화제·지사제)','멀미약','자외선 차단제','손소독제 · 물티슈','개인 위생용품'],
+  '전자기기':['보조배터리','중국 유심/로밍','멀티 어댑터']
+};
+const PACKING_NOTES = [
+  '항공권 E-티켓과 여행자보험 증서는 (사)평화통일교육문화센터에서 일괄 준비합니다. 개인 준비 불필요.',
+  '알리페이(Alipay) 또는 위챗페이(WeChat Pay)에 해외카드를 등록해 오시면 현금 없이도 대부분 결제가 가능합니다.',
+  '보조배터리는 100Wh 이하 제품만 반입 가능하며, 위탁수하물이 아닌 기내 휴대만 허용됩니다.',
+];
+function renderPackingPage(){
+  const cards = Object.entries(PACKING).map(([cat, items], ci)=>{
+    const itemsHtml = items.map((it, ii)=>{
+      const id = `pk-${ci}-${ii}`;
+      return `<div class="pack-item" data-id="${id}">
+        <input type="checkbox" id="${id}">
+        <label for="${id}">${escapeHtml(it)}</label>
+      </div>`;
+    }).join('');
+    return `<div class="card pack-card"><h3>${escapeHtml(cat)}</h3>${itemsHtml}</div>`;
+  }).join('');
+  const notesHtml = PACKING_NOTES.map(n=>`<li>${escapeHtml(n)}</li>`).join('');
+
+  return `
+  <section class="page" id="page-packing">
+    <div class="roster-head"><h2>준비물 체크리스트</h2><p>체크한 항목은 이 브라우저에 저장되어 다시 방문해도 유지됩니다.</p></div>
+    <div class="pack-grid">${cards}</div>
+    <button class="pack-reset" id="packReset">체크 초기화</button>
+    <div class="card" style="margin-top:18px;"><h3>참고 사항</h3><ul style="margin:0;padding-left:18px;font-size:12.8px;line-height:1.8;color:var(--ink-text-soft);">${notesHtml}</ul></div>
+  </section>`;
+}
+const PACK_KEY = 'imjeong_packing_v1';
+function loadPackingState(){
+  try{ return JSON.parse(localStorage.getItem(PACK_KEY) || '{}'); }catch(e){ return {}; }
+}
+function savePackingState(state){
+  try{ localStorage.setItem(PACK_KEY, JSON.stringify(state)); }catch(e){}
+}
+function initPacking(){
+  const state = loadPackingState();
+  document.querySelectorAll('#page-packing input[type=checkbox]').forEach(cb=>{
+    cb.checked = !!state[cb.id];
+    cb.closest('.pack-item').classList.toggle('done', cb.checked);
+    cb.addEventListener('change', ()=>{
+      const s = loadPackingState();
+      s[cb.id] = cb.checked;
+      savePackingState(s);
+      cb.closest('.pack-item').classList.toggle('done', cb.checked);
+    });
+  });
+  document.getElementById('packReset').addEventListener('click', ()=>{
+    savePackingState({});
+    document.querySelectorAll('#page-packing input[type=checkbox]').forEach(cb=>{
+      cb.checked = false;
+      cb.closest('.pack-item').classList.remove('done');
+    });
+  });
+}
+
+/* ============================================================
+   INFO PAGE
+   ============================================================ */
+function renderInfoPage(){
+  return `
+  <section class="page" id="page-info">
+    <div class="roster-head"><h2>항공 · 숙소 정보</h2></div>
+    <p class="route-note">전 일정 전용차량(37인승 리무진) 이동 · 쇼핑 일정 없음 · 귀국선물은 여행사가 준비한 리스트를 이동 중 차량에서 주문받아 준비합니다.</p>
+    <div class="info-grid">
+      <div class="card info-card">
+        <h3>인천 → 상하이 (KE881)</h3>
+        <p style="font-size:13px;color:var(--ink-text-soft);">2026.08.26(수) 09:00 인천 출발 → 10:05 상하이 푸둥공항 도착</p>
+        <a class="linkbtn" href="https://www.koreanair.com/booking/check-in" target="_blank" rel="noopener">대한항공 체크인 바로가기 →</a>
+      </div>
+      <div class="card info-card">
+        <h3>난징 → 인천 (KE102)</h3>
+        <p style="font-size:13px;color:var(--ink-text-soft);">2026.08.30(일) 14:40 난징 출발 → 18:15 인천 도착</p>
+        <a class="linkbtn" href="https://www.koreanair.com/booking/check-in" target="_blank" rel="noopener">대한항공 체크인 바로가기 →</a>
+      </div>
+      <div class="card info-card">
+        <h3>숙소 목록</h3>
+        <ul>
+          <li>상하이 · 上海华美国际酒店 (021-5383 8588)</li>
+          <li>자싱 · 嘉兴沙龙国际酒店 (0573-8391 8888)</li>
+          <li>난징 · 大观视界酒店 (025-5858 1155)</li>
+          <li>난징 · 南京中央饭店 (025-8315 0888)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="roster-head" style="margin-top:30px;"><h2>중국 기행 필수 앱</h2><p>출발 전 미리 설치해두시면 현지에서 훨씬 편합니다. 이름을 눌러 각 스토어로 이동합니다.</p></div>
+    <div class="info-grid">
+      <div class="card info-card">
+        <h3>💳 알리페이 (Alipay)</h3>
+        <p style="font-size:12.8px;color:var(--ink-text-soft);">해외카드를 등록하면 중국 어디서나 QR 결제가 가능합니다. 여권으로 본인인증하면 별도 중국 계좌 없이도 사용할 수 있습니다.</p>
+        <div style="display:flex; gap:10px; margin-top:10px;">
+          <a class="linkbtn" href="https://apps.apple.com/app/id333206289" target="_blank" rel="noopener">iOS →</a>
+          <a class="linkbtn" href="https://play.google.com/store/apps/details?id=com.eg.android.AlipayGphone" target="_blank" rel="noopener">Android →</a>
+        </div>
+      </div>
+      <div class="card info-card">
+        <h3>💬 위챗페이 (WeChat)</h3>
+        <p style="font-size:12.8px;color:var(--ink-text-soft);">메신저 기능이 함께 있어 현지 가이드·상점과의 소통에도 유용합니다. 결제 기능은 앱 안에서 별도 활성화가 필요합니다.</p>
+        <div style="display:flex; gap:10px; margin-top:10px;">
+          <a class="linkbtn" href="https://apps.apple.com/app/id414478124" target="_blank" rel="noopener">iOS →</a>
+          <a class="linkbtn" href="https://play.google.com/store/apps/details?id=com.tencent.mm" target="_blank" rel="noopener">Android →</a>
+        </div>
+      </div>
+      <div class="card info-card">
+        <h3>🧭 고덕지도 (AMap Global)</h3>
+        <p style="font-size:12.8px;color:var(--ink-text-soft);">해외 여행자용 영어 지원 버전입니다. 이 페이지 지도의 "고덕지도 →" 버튼과 연동되어 정확한 위치·길찾기·택시 호출에 활용할 수 있습니다.</p>
+        <div style="display:flex; gap:10px; margin-top:10px;">
+          <a class="linkbtn" href="https://apps.apple.com/app/id461703208" target="_blank" rel="noopener">iOS →</a>
+          <a class="linkbtn" href="https://play.google.com/store/apps/details?id=com.autonavi.minimap" target="_blank" rel="noopener">Android →</a>
+        </div>
+      </div>
+    </div>
+  </section>`;
+}
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+function boot(){
+  buildTabbar();
+  buildRouteStrip();
+  startCountdown();
+
+  const pagesEl = document.getElementById('pages');
+  let html = '';
+  DAY_ORDER.forEach((d,i)=>{ html += renderDayPage(d, i); });
+  html += renderRosterPage();
+  html += renderPackingPage();
+  html += renderInfoPage();
+  pagesEl.innerHTML = html;
+
+  document.addEventListener('click', (e)=>{
+    const gb = e.target.closest('.gate-btn');
+    if (gb) openGate(gb.dataset.no);
+  });
+  document.getElementById('gateCancel').addEventListener('click', closeGate);
+  document.getElementById('gateConfirm').addEventListener('click', confirmGate);
+  document.getElementById('gateInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter') confirmGate(); });
+  document.getElementById('gateBackdrop').addEventListener('click', (e)=>{ if(e.target.id==='gateBackdrop') closeGate(); });
+
+  initPacking();
+
+  switchTab('day1');
+  DAY_ORDER.forEach(loadWeather);
+}
+document.addEventListener('DOMContentLoaded', boot);
+
+</script>
+</body>
+</html>
